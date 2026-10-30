@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07070d">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>NOVA Chat</title>
+<style>
+:root{--bg:#07070d;--panel:#0e0e1a;--panel2:#14142a;--line:#26264a;--cyan:#00f0ff;--pink:#ff2bd6;--text:#e6e8ff;--mute:#8a8db5;--err:#ff5470;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:760px;margin:0 auto;padding-top:env(safe-area-inset-top);background:radial-gradient(120% 60% at 50% -10%,#1a0f3a 0%,transparent 60%)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:rgba(14,14,26,.85)}
+.logo{font-weight:800;letter-spacing:.5px;color:var(--cyan);text-shadow:0 0 12px rgba(0,240,255,.55);margin-right:auto;font-size:17px}
+.logo i{color:var(--pink);font-style:normal;text-shadow:0 0 12px rgba(255,43,214,.6)}
+.pill{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);font-size:13px;max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill:active,.ib:active{border-color:var(--cyan)}
+.ib{width:40px;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);font-size:17px;flex:none}
+#chat{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 12px 8px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+#chat::-webkit-scrollbar{width:4px}#chat::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.empty{margin:18vh 10px 0;text-align:center;color:var(--mute)}
+.empty b{display:block;font-size:20px;color:var(--text);margin-bottom:6px}
+.msg{max-width:88%;margin:0 0 12px;padding:10px 13px;border-radius:var(--r);word-wrap:break-word;overflow-wrap:anywhere;min-width:0}
+.msg.user{margin-left:auto;background:linear-gradient(135deg,#0b3b4a,#14315e);border:1px solid rgba(0,240,255,.35);border-bottom-right-radius:5px;white-space:pre-wrap}
+.msg.model{background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:5px;max-width:96%}
+.msg.err{border-color:var(--err);color:#ffc2cc;background:#2a0f1a}
+.msg p{margin:0 0 8px}.msg p:last-child{margin:0}
+.msg h4{margin:10px 0 6px;color:var(--cyan);font-size:15px}
+.msg ul,.msg ol{margin:4px 0 8px;padding-left:22px}
+.msg a{color:var(--cyan)}
+.msg code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#1b1b38;color:#ff9bf0;padding:1px 5px;border-radius:6px}
+.code{margin:8px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#05050b}
+.code-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 4px 12px;background:#12122a;font-size:12px;color:var(--mute)}
+.copy{padding:6px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px;color:var(--cyan)}
+.copy.ok{color:#5dffb0;border-color:#5dffb0}
+.code pre{margin:0;padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.code pre code{background:none;color:#d6dcff;padding:0;font-size:13px;white-space:pre}
+.think{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.dots{display:inline-flex;gap:4px}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:b 1.1s infinite ease-in-out}
+.dots span:nth-child(2){animation-delay:.15s;background:var(--pink)}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+footer{padding:8px 10px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(14,14,26,.92);display:flex;gap:8px;align-items:flex-end}
+#input{flex:1;resize:none;max-height:140px;min-height:44px;padding:11px 14px;border-radius:22px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:16px/1.4 inherit;outline:0}
+#input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,240,255,.15)}
+#send{width:46px;height:46px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--cyan),var(--pink));color:#05050b;font-size:20px;font-weight:800;box-shadow:0 0 16px rgba(0,240,255,.35)}
+#send:disabled{opacity:.4;box-shadow:none}
+.ov{position:fixed;inset:0;background:rgba(2,2,8,.7);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.ov.on{display:flex}
+.sheet{width:100%;max-width:560px;max-height:85dvh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet h3{margin:0 0 12px;font-size:17px;color:var(--cyan)}
+.opt{display:block;width:100%;text-align:left;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.opt.sel{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan)}
+.opt small{display:block;color:var(--mute);margin-top:2px}
+label{display:block;margin:10px 0 5px;font-size:13px;color:var(--mute)}
+.row{display:flex;gap:8px}
+.fld{flex:1;min-width:0;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px;outline:0}
+.fld:focus{border-color:var(--cyan)}
+.btn{padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.btn.main{background:linear-gradient(135deg,var(--cyan),#6a8bff);color:#05050b;font-weight:700;border:0}
+.btn.dan{color:var(--err);border-color:#5a2236}
+.acts{display:flex;gap:8px;margin-top:16px}.acts .btn{flex:1}
+.hint{font-size:12px;color:var(--mute);margin-top:6px}
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d1d3d;border:1px solid var(--cyan);padding:8px 14px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;white-space:nowrap}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">NOVA<i>.</i>CHAT</div>
+    <button class="pill" id="pBtn" type="button"></button>
+    <button class="ib" id="clrBtn" type="button" aria-label="Xóa lịch sử">🗑</button>
+    <button class="ib" id="setBtn" type="button" aria-label="Cài đặt">⚙</button>
+  </header>
+  <main id="chat" aria-live="polite"></main>
+  <footer>
+    <textarea id="input" rows="1" placeholder="Nhắn tin cho AI..." enterkeyhint="send"></textarea>
+    <button id="send" type="button" aria-label="Gửi">➤</button>
+  </footer>
+</div>
+
+<div class="ov" id="ovP"><div class="sheet"><h3>Chọn nhân vật AI</h3><div id="pList"></div></div></div>
+
+<div class="ov" id="ovS"><div class="sheet">
+  <h3>Cài đặt</h3>
+  <label for="keyIn">Gemini API Key</label>
+  <div class="row"><input class="fld" id="keyIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Dán API Key vào đây"><button class="btn" id="eye" type="button">👁</button></div>
+  <label for="modelIn">Tên model</label>
+  <input class="fld" id="modelIn" type="text" autocapitalize="off" spellcheck="false" placeholder="gemini-3.5-flash-lite">
+  <div class="hint">Key chỉ lưu trong localStorage trên máy này. Nếu model báo lỗi, hãy đổi sang tên model đúng của bạn.</div>
+  <div class="acts"><button class="btn" id="sCancel" type="button">Đóng</button><button class="btn main" id="sSave" type="button">Lưu</button></div>
+</div></div>
+
+<div class="ov" id="ovC"><div class="sheet">
+  <h3>Xóa toàn bộ lịch sử chat?</h3>
+  <div class="hint">Hành động này không thể hoàn tác.</div>
+  <div class="acts"><button class="btn" id="cNo" type="button">Giữ lại</button><button class="btn dan" id="cYes" type="button">Xóa hết</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)};
+var DEF_KEY="AQ.Ab8RN6Iz-zfoP_zZtCcadmlj4f9nykK9bvUk69m-iHOZMUEVOg";
+var DEF_MODEL="gemini-3.5-flash-lite", MAXSAVE=200, MAXCTX=30;
+var LS={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var PERSONAS={
+  game:{icon:"🎮",name:"Trợ lý Game thủ",desc:"Mẹo, build, meta cho game mobile",
+    prompt:"Bạn là trợ lý dành cho game thủ mobile. Trả lời bằng tiếng Việt, ngắn gọn, thân thiện, đi thẳng vào mẹo, cách build, cấu hình tối ưu hiệu năng và chiến thuật. Với Minecraft Bedrock, ưu tiên cách làm hoạt động trên bản Bedrock. Nếu không chắc về thông tin, hãy nói rõ."},
+  code:{icon:"💻",name:"Chuyên gia Lua/JS",desc:"Viết, sửa, giải thích code",
+    prompt:"Bạn là lập trình viên senior chuyên Lua và JavaScript (gồm cả web thuần HTML/CSS/JS). Trả lời bằng tiếng Việt. Luôn đưa code hoàn chỉnh trong khối ```ngôn_ngữ, giải thích ngắn gọn từng phần quan trọng, chỉ ra lỗi tiềm ẩn và cách tối ưu. Ưu tiên giải pháp nhẹ, không cần thư viện nặng."},
+  friend:{icon:"💬",name:"Bạn đồng hành",desc:"Trò chuyện thoải mái, tâm sự",
+    prompt:"Bạn là một người bạn thân thiện, ấm áp và hài hước nhẹ nhàng. Trò chuyện bằng tiếng Việt tự nhiên như bạn bè, lắng nghe, hỏi lại khi cần, không giảng đạo và không quá dài dòng."}
+};
+var state={persona:LS.get("persona","game"),hist:LS.get("hist",[]),busy:false};
+if(!PERSONAS[state.persona])state.persona="game";
+if(!Array.isArray(state.hist))state.hist=[];
+
+var chat=$("#chat"),input=$("#input"),sendBtn=$("#send");
+
+function toast(t){var e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},1800)}
+function show(id){$(id).classList.add("on")}
+function hide(id){$(id).classList.remove("on")}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+/* ---------- Markdown nhẹ ---------- */
+function inline(t){
+  return esc(t)
+    .replace(/`([^`\n]+)`/g,"<code>$1</code>")
+    .replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*\n]*)\*/g,"$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function block(t){
+  var o="",list=null,para=[],m;
+  function fp(){if(para.length){o+="<p>"+para.map(inline).join("<br>")+"</p>";para=[]}}
+  function fl(){if(list){o+="</"+list+">";list=null}}
+  t.split("\n").forEach(function(raw){
+    var l=raw.replace(/\s+$/,"");
+    if(!l.trim()){fp();fl();return}
+    if((m=l.match(/^#{1,4}\s+(.*)/))){fp();fl();o+="<h4>"+inline(m[1])+"</h4>";return}
+    if((m=l.match(/^\s*[-*•]\s+(.*)/))){fp();if(list!=="ul"){fl();o+="<ul>";list="ul"}o+="<li>"+inline(m[1])+"</li>";return}
+    if((m=l.match(/^\s*\d+[.)]\s+(.*)/))){fp();if(list!=="ol"){fl();o+="<ol>";list="ol"}o+="<li>"+inline(m[1])+"</li>";return}
+    fl();para.push(l);
+  });
+  fp();fl();return o;
+}
+function md(src){
+  return src.split("```").map(function(p,i){
+    if(i%2===0)return block(p);
+    var nl=p.indexOf("\n"),lang="",code=p;
+    if(nl>-1){lang=p.slice(0,nl).trim();code=p.slice(nl+1)}
+    code=code.replace(/\n+$/,"");
+    return '<div class="code"><div class="code-bar"><span>'+esc(lang||"code")+'</span><button class="copy" type="button">Sao chép</button></div><pre><code>'+esc(code)+"</code></pre></div>";
+  }).join("");
+}
+
+/* ---------- Hiển thị ---------- */
+function scrollEnd(){chat.scrollTop=chat.scrollHeight}
+function addMsg(m){
+  var d=document.createElement("div");
+  d.className="msg "+(m.role==="user"?"user":"model")+(m.err?" err":"");
+  if(m.role==="user"||m.err)d.textContent=m.text;else d.innerHTML=md(m.text);
+  chat.appendChild(d);return d;
+}
+function renderAll(){
+  chat.innerHTML="";
+  if(!state.hist.length){
+    var e=document.createElement("div");e.className="empty";
+    e.innerHTML="<b>Sẵn sàng kết nối</b>Chọn nhân vật ở trên rồi nhắn tin. Bấm ⚙ nếu muốn đổi API Key hoặc model.";
+    chat.appendChild(e);
+  }else state.hist.forEach(addMsg);
+  scrollEnd();
+}
+function renderPersona(){
+  var p=PERSONAS[state.persona];$("#pBtn").textContent=p.icon+" "+p.name;
+  $("#pList").innerHTML="";
+  Object.keys(PERSONAS).forEach(function(k){
+    var q=PERSONAS[k],b=document.createElement("button");
+    b.type="button";b.className="opt"+(k===state.persona?" sel":"");
+    b.innerHTML=q.icon+" <b>"+q.name+"</b><small>"+q.desc+"</small>";
+    b.onclick=function(){state.persona=k;LS.set("persona",k);renderPersona();hide("#ovP");toast("Đã chọn: "+q.name)};
+    $("#pList").appendChild(b);
+  });
+}
+function save(){LS.set("hist",state.hist.slice(-MAXSAVE))}
+function setBusy(b){state.busy=b;sendBtn.disabled=b}
+function autosize(){input.style.height="auto";input.style.height=Math.min(input.scrollHeight,140)+"px"}
+
+function thinking(){
+  var d=document.createElement("div");d.className="msg model";
+  d.innerHTML='<div class="think"><span class="dots"><span></span><span></span><span></span></span>AI đang suy nghĩ...</div>';
+  chat.appendChild(d);scrollEnd();return d;
+}
+
+/* ---------- Gọi Gemini ---------- */
+function send(){
+  var txt=input.value.trim();
+  if(!txt||state.busy)return;
+  var key=LS.get("nova_key","")||DEF_KEY;
+  if(!key){openSettings();toast("Hãy nhập API Key trước");return}
+  if(!state.hist.length)chat.innerHTML="";
+  var um={role:"user",text:txt};
+  state.hist.push(um);save();addMsg(um);
+  input.value="";autosize();setBusy(true);
+  var th=thinking();
+  var model=LS.get("nova_model","")||DEF_MODEL;
+  var contents=state.hist.slice(-MAXCTX).map(function(m){return{role:m.role==="user"?"user":"model",parts:[{text:m.text}]}});
+  fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-goog-api-key":key},
+    body:JSON.stringify({systemInstruction:{parts:[{text:PERSONAS[state.persona].prompt}]},contents:contents})
+  }).then(function(r){
+    return r.json().catch(function(){return{}}).then(function(j){
+      if(!r.ok)throw new Error((j.error&&j.error.message)||("Lỗi HTTP "+r.status));
+      var c=j.candidates&&j.candidates[0];
+      var t=c&&c.content&&c.content.parts?c.content.parts.map(function(p){return p.text||""}).join(""):"";
+      if(!t)throw new Error(j.promptFeedback&&j.promptFeedback.blockReason?"Nội dung bị chặn: "+j.promptFeedback.blockReason:"AI không trả về nội dung. Hãy thử lại.");
+      return t;
+    });
+  }).then(function(t){
+    th.remove();var m={role:"model",text:t};state.hist.push(m);save();addMsg(m);
+  }).catch(function(e){
+    th.remove();
+    var net=/Failed to fetch|NetworkError|Load failed/i.test(e.message);
+    var msg=net?"Không gửi được yêu cầu ("+e.name+": "+e.message+").\nNguyên nhân thường gặp: thiếu quyền INTERNET khi đóng gói APK, mạng chặn googleapis.com, hoặc trình xem trước của Acode chặn request. Hãy thử mở file bằng Chrome để kiểm tra.":e.message;
+    addMsg({role:"model",text:msg,err:true});
+  }).then(function(){setBusy(false);scrollEnd()});
+  scrollEnd();
+}
+
+/* ---------- Sao chép code ---------- */
+function copyText(t,btn){
+  function ok(){btn.textContent="Đã chép";btn.classList.add("ok");setTimeout(function(){btn.textContent="Sao chép";btn.classList.remove("ok")},1500)}
+  function fb(){
+    var a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";
+    document.body.appendChild(a);a.select();
+    try{document.execCommand("copy");ok()}catch(e){toast("Không sao chép được")}
+    a.remove();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb)}else fb();
+}
+chat.addEventListener("click",function(e){
+  var b=e.target.closest(".copy");if(!b)return;
+  copyText(b.closest(".code").querySelector("code").textContent,b);
+});
+
+/* ---------- Cài đặt ---------- */
+function openSettings(){
+  $("#keyIn").value=LS.get("nova_key","")||DEF_KEY;$("#modelIn").value=LS.get("nova_model","")||DEF_MODEL;
+  $("#keyIn").type="password";show("#ovS");
+}
+$("#setBtn").onclick=openSettings;
+$("#eye").onclick=function(){var k=$("#keyIn");k.type=k.type==="password"?"text":"password"};
+$("#sCancel").onclick=function(){hide("#ovS")};
+$("#sSave").onclick=function(){
+  LS.set("nova_key",$("#keyIn").value.trim());
+  LS.set("nova_model",$("#modelIn").value.trim()||DEF_MODEL);
+  hide("#ovS");toast("Đã lưu cài đặt");
+};
+$("#pBtn").onclick=function(){show("#ovP")};
+$("#clrBtn").onclick=function(){if(state.hist.length)show("#ovC");else toast("Chưa có tin nhắn nào")};
+$("#cNo").onclick=function(){hide("#ovC")};
+$("#cYes").onclick=function(){state.hist=[];save();renderAll();hide("#ovC");toast("Đã xóa lịch sử")};
+["#ovP","#ovS","#ovC"].forEach(function(id){
+  $(id).addEventListener("click",function(e){if(e.target===this)hide(id)});
+});
+
+/* ---------- Nhập liệu ---------- */
+sendBtn.onclick=send;
+input.addEventListener("input",autosize);
+input.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();send()}
+});
+input.addEventListener("focus",function(){setTimeout(scrollEnd,300)});
+window.addEventListener("resize",scrollEnd);
+
+renderPersona();renderAll();
+if("serviceWorker" in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register("sw.js").catch(function(){})}
+})();
+</script>
+</body>
+</html>
